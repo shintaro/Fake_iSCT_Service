@@ -19,9 +19,11 @@ namespace FakeISCT
         private String serverIPAddress;
         private MySocketClient socket;
         private TaskSchedulerManager task;
-        private int port = 6001;
+        private readonly int port = 6001;
         private int systemWakeTime = 60;
         private int systemSleepTime = 120;
+        private MyRegKey regkey;
+        private readonly string regKeyName = @"Software\FakeISCT\";
 
         public FakeISCT()
         {
@@ -33,6 +35,7 @@ namespace FakeISCT
             }
             eventLog1.Source = "FakeICSTSource";
             eventLog1.Log = "FakeISCTLog";
+            eventLog1.WriteEntry("FakeISCT start");
         }
 
         internal static class UnsafeNativeMethods
@@ -48,6 +51,25 @@ namespace FakeISCT
         protected override void OnStart(string[] args)
         {
             eventLog1.WriteEntry("In OnStart!!!");
+            regkey = new MyRegKey(eventLog1);
+            if (regkey.isKeyExist(regKeyName))
+            {
+                string[] s = regkey.readValue(regKeyName);
+                try
+                {
+                    systemWakeTime = Int32.Parse(s[0]);
+                    systemSleepTime = Int32.Parse(s[1]);
+                }
+                catch (Exception e)
+                {
+                    eventLog1.WriteEntry("Wrong Registry Value" + e.Message);
+                }
+            }
+            else
+            {
+                regkey.setValues(regKeyName, systemWakeTime.ToString(), systemSleepTime.ToString());
+            }
+
             if (isValidLocalIPAddress(getLocalIPAddress()))
             {
                 eventLog1.WriteEntry("Got Valid IP Address");
@@ -68,12 +90,12 @@ namespace FakeISCT
                 eventLog1.WriteEntry("Invalid local IP address");
             }
         }
-        
+
         protected override void OnContinue()
         {
             eventLog1.WriteEntry("In OnContinue!!!");
         }
-        
+
         protected override void OnPause()
         {
             eventLog1.WriteEntry("In OnPause!!!");
@@ -106,13 +128,13 @@ namespace FakeISCT
                 do
                 {
                     eventLog1.WriteEntry("The system awake " + systemWakeTime.ToString() + " sec");
-                    Thread.Sleep(systemWakeTime*1000);
-                    
+                    Thread.Sleep(systemWakeTime * 1000);
+
                     socket = new MySocketClient(eventLog1);
                     socket.open(getServerIPAddress(getLocalIPAddress()), port);
                     socket.sendSleepTime(systemSleepTime);
                     socket.close();
-                    
+
                     task.addWakeUpTask(systemSleepTime);
                     eventLog1.WriteEntry("The system is going to sleep " + systemSleepTime + "sec");
                     Thread.Sleep(3000);

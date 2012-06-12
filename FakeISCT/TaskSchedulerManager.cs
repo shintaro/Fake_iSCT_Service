@@ -56,7 +56,7 @@ namespace FakeISCT
             //trigger.StateChange = _TASK_SESSION_STATE_CHANGE_TYPE.TASK_SESSION_UNLOCK;
             trigger.Enabled = true;
             trigger.StartBoundary = (DateTime.Now.AddSeconds(sT)).ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss");
-            
+
             task.RegistrationInfo.Author = "Shintaro Agatsuma";
             task.RegistrationInfo.Description = "Fake iSCT Task.";
             try
